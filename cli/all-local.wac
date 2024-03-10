@@ -1,0 +1,7 @@
+package test:demo;
+
+let hashimap = new macovedj:hashimap { ... };
+let sorted = new macovedj:local-sorter { "macovedj:shapes/hashimap": hashimap.hashimap, ... };
+let cli = new macovedj:cli { "macovedj:ifaces/hashimap": sorted.hashimap, ... };
+
+export cli...;

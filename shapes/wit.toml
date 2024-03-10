@@ -1,0 +1,8 @@
+version = "0.1.0"
+
+[dependencies]
+"wasi:http" = "0.2.0"
+"wasi:filesystem" = "0.2.0"
+
+[registries]
+default = "https://wasi.preview.wa.dev"

@@ -1,0 +1,6 @@
+package macovedj:composed;
+
+let hashimap = new macovedj:hashimap{ ... };
+let cli = new macovedj:cli { "macovedj:ifaces/hashimap": hashimap.hashimap, ... };
+
+export cli...;

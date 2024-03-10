@@ -1,0 +1,6 @@
+package test:demo;
+
+let sorted-map = new macovedj:client-sorter { ... };
+let sorter = new macovedj:cli { "macovedj:ifaces/hashimap": sorted-map.hashimap, ... };
+
+export sorter...;

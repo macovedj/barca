@@ -1,0 +1,39 @@
+package macovedj:shapes;
+
+interface hashimap {
+  resource hashimap {
+    constructor();
+    //TODO: insert: func(name: string, job: string);
+    get: func(name: string) -> option<string>;
+    keys: func() -> list<string>;
+  }
+}
+
+world local-hashimap {
+  export hashimap;
+}
+
+world client-hashimap {
+  include wasi:http/imports@0.2.0;
+  export hashimap;
+}
+
+world hashimap-service {
+  import hashimap;
+  export wasi:http/incoming-handler@0.2.0;
+}
+
+world local-sorter {
+  import hashimap;
+  export hashimap;
+}
+
+world sorter-service {
+  include wasi:http/imports@0.2.0;
+  export wasi:http/incoming-handler@0.2.0;
+}
+
+world client-sorter {
+  include wasi:http/imports@0.2.0;
+  export hashimap;
+}

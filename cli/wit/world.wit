@@ -1,0 +1,5 @@
+package macovedj:cli;
+
+world default {
+  import macovedj:shapes/hashimap;
+}
