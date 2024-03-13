@@ -13,15 +13,15 @@ struct Component;
 #[derive(Debug, Serialize, Deserialize)]
 struct ReqBody {
     function: String,
-    values: (String, String),
+    key: Option<String>,
 }
 impl Guest for Component {
     fn handle(request: IncomingRequest, response_out: ResponseOutparam) {
-        // let map = Goodmap::new();
         let req_body = request.consume().unwrap();
         let stream = req_body.stream().unwrap();
         let in_body: ReqBody = serde_json::from_slice(&stream.blocking_read(100).unwrap()).unwrap();
 
+        dbg!("SORTING SERVICE");
         let fields = Fields::new();
         let out_req = OutgoingRequest::new(fields);
         out_req.set_method(&Method::Post).unwrap();
@@ -39,8 +39,6 @@ impl Guest for Component {
         let body = res.consume().unwrap();
         let stream = body.stream().unwrap();
         let bytes = &stream.blocking_read(100).unwrap();
-        dbg!("PREFUNCCHECK");
-        dbg!(&in_body);
         if in_body.function == "keys" {
             let mut thing: Vec<String> = serde_json::from_slice(bytes).unwrap();
             thing.sort();
@@ -71,68 +69,6 @@ impl Guest for Component {
             drop(out);
             OutgoingBody::finish(body, None).unwrap();
         }
-
-        // if body.function == "insert" {
-        //     if let Some(v) = body.values {
-        //         let key = v.0;
-        //         let val = v.1;
-        //     }
-        // if body.function == "get" {}
-        //     let res = if let Some(v) = body.values {
-        //         let key = v.0;
-        //         map.get(&key)
-        //     } else {
-        //         None
-        //     };
-        //     let hdrs = Fields::new();
-        //     let resp = OutgoingResponse::new(hdrs);
-        //     let body = resp.body().expect("outgoing response");
-
-        //     ResponseOutparam::set(outparam, Ok(resp));
-
-        //     let out = body.write().expect("outgoing stream");
-        //     if let Some(res) = res {
-        //         out.blocking_write_and_flush(&res.as_bytes())
-        //             .expect("writing response");
-        //     }
-
-        //     drop(out);
-        //     OutgoingBody::finish(body, None).unwrap();
-        //     return;
-        // } else if body.function == "keys" {
-        // if body.function == "keys" {
-        // dbg!("INSIDE GET BLOCK");
-        // // let res = map.keys();
-        // let hdrs = Fields::new();
-        // let resp = OutgoingResponse::new(hdrs);
-        // let body = resp.body().expect("outgoing response");
-
-        // dbg!("WILL CALL SET");
-        // ResponseOutparam::set(response_out, Ok(resp));
-
-        // let out = body.write().expect("outgoing stream");
-        // // if let Some(res) = res {
-        // out.blocking_write_and_flush(&serde_json::to_string(&thing).unwrap().as_bytes())
-        //     .expect("writing response");
-        // // }
-
-        // drop(out);
-        // OutgoingBody::finish(body, None).unwrap();
-        // return;
-        // }
-        // let hdrs = Fields::new();
-        // let resp = OutgoingResponse::new(hdrs);
-        // let body = resp.body().expect("outgoing response");
-
-        // ResponseOutparam::set(response_out, Ok(resp));
-
-        // let out = body.write().expect("outgoing stream");
-        // // out.blocking_write_and_flush(foo.foo.as_bytes())
-        // out.blocking_write_and_flush("hello world".as_bytes())
-        //     .expect("writing response");
-
-        // drop(out);
-        // OutgoingBody::finish(body, None).unwrap();
     }
 }
 

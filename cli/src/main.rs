@@ -7,6 +7,7 @@ fn main() {
     let map = Hashimap::new();
 
     let keys = map.keys();
+    dbg!(&keys);
     for key in keys {
         let val = map.get(&key);
         dbg!(key, val);

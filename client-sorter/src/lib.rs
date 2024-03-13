@@ -13,7 +13,7 @@ struct Hashimap;
 #[derive(Debug, Serialize, Deserialize)]
 struct ReqBody {
     function: String,
-    values: (String, String),
+    key: Option<String>,
 }
 
 impl GuestHashimap for Hashimap {
@@ -31,7 +31,7 @@ impl GuestHashimap for Hashimap {
         let stream = body.write().unwrap();
         let to_write = ReqBody {
             function: "get".to_string(),
-            values: (name, "any".to_string()),
+            key: Some(name),
         };
         stream.blocking_write_and_flush(serde_json::to_string(&to_write).unwrap().as_bytes());
         let res = handle(req, None).unwrap();
@@ -57,7 +57,7 @@ impl GuestHashimap for Hashimap {
         let stream = body.write().unwrap();
         let to_write = ReqBody {
             function: "keys".to_string(),
-            values: ("other-any".to_string(), "any".to_string()),
+            key: None,
         };
         stream.blocking_write_and_flush(serde_json::to_string(&to_write).unwrap().as_bytes());
         let res = handle(req, None).unwrap();
