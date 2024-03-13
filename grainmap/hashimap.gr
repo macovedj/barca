@@ -7,7 +7,11 @@ use LocalHashimapImports.{ newHashimap, type Hashimap }
 
 provide module Hashimap {
   provide let constructor = () => {
-    newHashimap(Map.make())
+    let map = Map.make()
+    Map.set("Danny", "developer", map)
+    Map.set("Calvin", "programmer", map)
+    Map.set("Oscar", "engineer", map)
+    newHashimap(map)
   }
 
   provide let get = (self: Hashimap, name: String) => {
