@@ -35,6 +35,7 @@ provide let cabi_realloc = (originalPtr: WasmI32, originalSize: WasmI32, alignme
 @externalName("foo:foo/hashimap#[constructor]hashimap")
 provide let fooFooHashimapConstructorHashimap = () => {
   let result = HashimapExports.Hashimap.constructor()
+  Memory.incRef(WasmI32.fromGrain(result))
   WasmI32.load(WasmI32.fromGrain(result.handle), 4n)
 }
 
@@ -92,6 +93,8 @@ provide let fooFooHashimapMethodHashimapKeys = (arg0: WasmI32) => {
   }
   WasmI32.store(_RET_AREA, len_list_lower, 4n)
   WasmI32.store(_RET_AREA, result_list_lower, 0n)
+  ignore(result)
+  print("yo")
   _RET_AREA
 }
 
