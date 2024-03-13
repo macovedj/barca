@@ -94,7 +94,6 @@ provide let fooFooHashimapMethodHashimapKeys = (arg0: WasmI32) => {
   WasmI32.store(_RET_AREA, len_list_lower, 4n)
   WasmI32.store(_RET_AREA, result_list_lower, 0n)
   ignore(result)
-  print("yo")
   _RET_AREA
 }
 
