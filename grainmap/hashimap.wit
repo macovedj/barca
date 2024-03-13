@@ -1,0 +1,14 @@
+package foo:foo;
+
+interface hashimap {
+  resource hashimap {
+    constructor();
+    // insert: func(name: string, job: string);
+    get: func(name: string) -> option<string>;
+    keys: func() -> list<string>;
+  }
+}
+
+world local-hashimap {
+  export hashimap;
+}

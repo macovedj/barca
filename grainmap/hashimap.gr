@@ -1,0 +1,20 @@
+module LocalHashimap
+
+from "map" include Map
+
+from "./imports.gr" include LocalHashimapImports
+use LocalHashimapImports.{ newHashimap, type Hashimap }
+
+provide module Hashimap {
+  provide let constructor = () => {
+    newHashimap(Map.make())
+  }
+
+  provide let get = (self: Hashimap, name: String) => {
+    Map.get(name, self.rep)
+  }
+
+  provide let keys = (self: Hashimap) => {
+    Map.keys(self.rep)
+  }
+}

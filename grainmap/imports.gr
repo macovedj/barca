@@ -1,0 +1,32 @@
+module LocalHashimapImports
+
+from "runtime/dataStructures" include DataStructures
+from "runtime/unsafe/wasmi32" include WasmI32
+from "map" include Map
+
+provide record Resource<a> {
+  mut handle: Int32,
+  rep: a
+}
+
+// Export functions from foo:foo/hashimap
+
+provide type Hashmap = Map.Map<String, String>
+
+provide type Hashimap = Resource<Hashmap>
+
+@externalName("[resource-new]hashimap")
+foreign wasm newHashimap: WasmI32 -> WasmI32 from "[export]foo:foo/hashimap"
+
+@externalName("[resource-rep]hashimap")
+foreign wasm repHashimap: WasmI32 -> WasmI32 from "[export]foo:foo/hashimap"
+
+@unsafe
+provide let newHashimap = (rep) => {
+  let v = {handle: 0l, rep}
+  let ptr = WasmI32.fromGrain(v)
+  let handle = newHashimap(ptr)
+  let handle = WasmI32.toGrain(DataStructures.newInt32(handle)): Int32
+  v.handle = handle
+  v: Hashimap
+}
