@@ -52,7 +52,8 @@ provide module IncomingHandlerExports {
     }
     use Streams.{ module InputStream, module OutputStream }
 
-    print("Hitting sorter service.")
+    print("\n\n==============")
+    print("SORTER SERVICE")
 
     // Read incoming request
     let requestBody = Result.unwrap(IncomingRequest.consume(request))
@@ -76,12 +77,12 @@ provide module IncomingHandlerExports {
     let pollable = FutureIncomingResponse.subscribe(response)
     Poll.Pollable.block(pollable)
     let response = Option.unwrap(FutureIncomingResponse.get(response))
-    let proxyJson = match (response) {
+    let response = match (response) {
       Ok(Ok(response)) => {
         let body = Result.unwrap(IncomingResponse.consume(response))
         let stream = Result.unwrap(IncomingBody.stream(body))
         let bytes = Result.unwrap(InputStream.blockingRead(stream, 4096uL))
-        Result.unwrap(Json.parse(Bytes.toString(bytes)))
+        Bytes.toString(bytes)
       },
       _ => {
         ResponseOutparam.set(responseOut, Err(Proxy.ConnectionRefused))
@@ -94,6 +95,9 @@ provide module IncomingHandlerExports {
         let fields = Map.fromList(fields)
         match (Map.get("function", fields)) {
           Some(Json.JsonString("keys")) => {
+            print("function: keys")
+
+            let proxyJson = Result.unwrap(Json.parse(response))
             let sorted = match (proxyJson) {
               Json.JsonArray(l) => Json.JsonArray(List.sort(l)),
               _ => proxyJson,
@@ -110,15 +114,17 @@ provide module IncomingHandlerExports {
             ResponseOutparam.set(responseOut, Ok(outgoingResponse))
           },
           Some(Json.JsonString("get")) => {
-            let jsonString = Result.unwrap(Json.toString(proxyJson))
-            let jsonBytes = Bytes.fromString(jsonString)
+            print("function: get")
 
             // Write response
             let fields = Fields.constructor()
             let outgoingResponse = OutgoingResponse.constructor(fields)
             let body = Result.unwrap(OutgoingResponse.body(outgoingResponse))
             let stream = Result.unwrap(OutgoingBody.write(body))
-            OutputStream.blockingWriteAndFlush(stream, jsonBytes)
+            OutputStream.blockingWriteAndFlush(
+              stream,
+              Bytes.fromString(response)
+            )
             ResponseOutparam.set(responseOut, Ok(outgoingResponse))
           },
           _ => {
