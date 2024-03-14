@@ -1,0 +1,142 @@
+module Sorter
+
+from "runtime/dataStructures" include DataStructures
+from "runtime/unsafe/wasmi32" include WasmI32
+from "runtime/unsafe/wasmi64" include WasmI64
+from "runtime/unsafe/wasmf32" include WasmF32
+from "runtime/unsafe/wasmf64" include WasmF64
+from "runtime/unsafe/memory" include Memory
+from "int32" include Int32
+from "int64" include Int64
+from "bytes" include Bytes
+from "char" include Char
+from "json" include Json
+from "map" include Map
+from "list" include List
+from "option" include Option
+from "result" include Result
+
+from "./imports.gr" include Proxy
+use Proxy.{
+  type IncomingRequest,
+  type ResponseOutparam,
+  module Types,
+  module Poll,
+  module Streams,
+  module OutgoingHandler,
+}
+
+let stringList = jsonList => {
+  List.reduceRight((node, acc) => {
+    match (node) {
+      Json.JsonString(s) => [s, ...acc],
+      _ => acc,
+    }
+  }, [], jsonList)
+}
+
+// Export functions from wasi:http/incoming-handler@0.2.0
+
+provide module IncomingHandlerExports {
+  provide let handle = (request: IncomingRequest, responseOut: ResponseOutparam) => {
+    use Types.{
+      module IncomingRequest,
+      module IncomingResponse,
+      module IncomingBody,
+      module OutgoingRequest,
+      module OutgoingResponse,
+      module OutgoingBody,
+      module Fields,
+      module ResponseOutparam,
+      module FutureIncomingResponse,
+    }
+    use Streams.{ module InputStream, module OutputStream }
+
+    // Read incoming request
+    let requestBody = Result.unwrap(IncomingRequest.consume(request))
+    let stream = Result.unwrap(IncomingBody.stream(requestBody))
+    let bytes = Result.unwrap(InputStream.blockingRead(stream, 4096uL))
+    let requestJson = Result.unwrap(Json.parse(Bytes.toString(bytes)))
+
+    // Proxy the request to the hashmap server
+    let fields = Fields.constructor()
+    let outgoingRequest = OutgoingRequest.constructor(fields)
+    OutgoingRequest.setMethod(outgoingRequest, Post)
+    OutgoingRequest.setScheme(outgoingRequest, Some(Http))
+    OutgoingRequest.setAuthority(outgoingRequest, Some("localhost:8080"))
+    OutgoingRequest.setPathWithQuery(outgoingRequest, Some("/"))
+    let outBody = Result.unwrap(OutgoingRequest.body(outgoingRequest))
+    let outStream = Result.unwrap(OutgoingBody.write(outBody))
+    OutputStream.blockingWriteAndFlush(outStream, bytes)
+
+    // Read the response
+    let response = Result.unwrap(OutgoingHandler.handle(outgoingRequest, None))
+    let pollable = FutureIncomingResponse.subscribe(response)
+    Poll.Pollable.block(pollable)
+    let response = Option.unwrap(FutureIncomingResponse.get(response))
+    let proxyJson = match (response) {
+      Ok(Ok(response)) => {
+        let body = Result.unwrap(IncomingResponse.consume(response))
+        let stream = Result.unwrap(IncomingBody.stream(body))
+        let bytes = Result.unwrap(InputStream.blockingRead(stream, 4096uL))
+        Result.unwrap(Json.parse(Bytes.toString(bytes)))
+      },
+      _ => {
+        ResponseOutparam.set(responseOut, Err(Proxy.ConnectionRefused))
+        return
+      },
+    }
+
+    match (requestJson) {
+      Json.JsonObject(fields) => {
+        let fields = Map.fromList(fields)
+        match (Map.get("function", fields)) {
+          Some(Json.JsonString("keys")) => {
+            let sorted = match (proxyJson) {
+              Json.JsonArray(l) => Json.JsonArray(List.sort(l)),
+              _ => proxyJson,
+            }
+            let jsonString = Result.unwrap(Json.toString(sorted))
+            let jsonBytes = Bytes.fromString(jsonString)
+
+            // Write response
+            let fields = Fields.constructor()
+            let outgoingResponse = OutgoingResponse.constructor(fields)
+            let body = Result.unwrap(OutgoingResponse.body(outgoingResponse))
+            let stream = Result.unwrap(OutgoingBody.write(body))
+            OutputStream.blockingWriteAndFlush(stream, jsonBytes)
+            ResponseOutparam.set(responseOut, Ok(outgoingResponse))
+          },
+          Some(Json.JsonString("get")) => {
+            let jsonString = Result.unwrap(Json.toString(proxyJson))
+            let jsonBytes = Bytes.fromString(jsonString)
+
+            // Write response
+            let fields = Fields.constructor()
+            let outgoingResponse = OutgoingResponse.constructor(fields)
+            let body = Result.unwrap(OutgoingResponse.body(outgoingResponse))
+            let stream = Result.unwrap(OutgoingBody.write(body))
+            OutputStream.blockingWriteAndFlush(stream, jsonBytes)
+            ResponseOutparam.set(responseOut, Ok(outgoingResponse))
+          },
+          _ => {
+            let fields = Fields.constructor()
+            let outgoingResponse = OutgoingResponse.constructor(fields)
+            OutgoingResponse.setStatusCode(outgoingResponse, 400uS)
+            ResponseOutparam.set(responseOut, Ok(outgoingResponse))
+            return
+          },
+        }
+      },
+      _ => {
+        let fields = Fields.constructor()
+        let outgoingResponse = OutgoingResponse.constructor(fields)
+        OutgoingResponse.setStatusCode(outgoingResponse, 400uS)
+        ResponseOutparam.set(responseOut, Ok(outgoingResponse))
+        return
+      },
+    }
+
+    return
+  }
+}
