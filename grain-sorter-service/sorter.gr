@@ -52,6 +52,8 @@ provide module IncomingHandlerExports {
     }
     use Streams.{ module InputStream, module OutputStream }
 
+    print("Hitting sorter service.")
+
     // Read incoming request
     let requestBody = Result.unwrap(IncomingRequest.consume(request))
     let stream = Result.unwrap(IncomingBody.stream(requestBody))
